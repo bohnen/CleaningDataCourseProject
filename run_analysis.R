@@ -23,28 +23,25 @@ readData <- function(dir, spec="test"){
 
   ## add label
   ## uses descriptive activity names (3.)
-  activity <- merge(activity, act_label,sort=FALSE)$V2
-  names(subject)  <- "subject"
-  names(activity) <- "activity"
-  
-  ## labels the data set with descriptive variable names (4.)
-  ## R's data name doesn't accept "-" and "()", so replace it.
-  names(data)     <- gsub("\\(\\)","",gsub("-","_",features$V2))
-  
-  ## extracts only mean and standard deviation (2.)
-  ## grep patterns are carefully choosed for excluding "*meanFreq"  
-  data     <- data[,grep("_mean_|_std_|_mean$|_std$",names(data),value=TRUE)]
-  
-  data.frame(activity, subject, data)
+  activity <- merge(activity, act_label,sort=FALSE)$V2    
+  cbind(activity, subject, data)
 }
 
 ## merge train and test data (1.)
 all_data <- rbind(readData(data_dir,"train"),
                  readData(data_dir,"test"))
 
-## creates tidy data set with the average of each variable
-## for each activity and each subject
+## labels the data set with descriptive variable names (4.)
+## Using original feature name. make.names convert unacceptable character to "."
+names(all_data)     <- c("activity","subject",make.names(names=features$V2, unique=TRUE))
+
 tidy_data <- tbl_df(all_data) %>%
+  ## extracts only mean and standard deviation (2.)
+  ## grep patterns are carefully choosed for excluding "*meanFreq"
+  select(activity, subject, matches("\\.mean\\.|\\.std\\.")) %>%
+
+  ## creates tidy data set with the average of each variable
+  ## for each activity and each subject (5.)
   group_by(activity,subject) %>%
   summarise_each(funs(mean)) %>%
   arrange(activity,subject)

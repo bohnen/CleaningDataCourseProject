@@ -1,55 +1,84 @@
 # CleaningDataCourseProject
 
+## Description of the assignment
+
+1. Submit a tidy data set as described below
+2. Submit a link to a Github repository with your script for performing the analysis
+3. The repository must have a code book that describes the variables, the data, and any transformations or work that you performed to clean up the data called CodeBook.md.
+4. You should also include a README.md in the repo with your scripts
+
+### Tidy data set 
+
+Download https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip, then create script called run_analysis.R which create tidy data set as follows:
+
+* TD-1: Merges the training and the test sets to create one data set.
+* TD-2: Extracts only the measurements on the mean and standard deviation for each measurement. 
+* TD-3: Uses descriptive activity names to name the activities in the data set
+* TD-4: Appropriately labels the data set with descriptive variable names. 
+* TD-5: From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+
 ## description of run_analysis.R
 
-First, this script reads all features and activity names for later use, as labels.
+### Prerequisite
 
-Then read data from each sub-directory, 'train' and 'test'. As both directory has same structure,
-reading from that directory should be the same process. 'readData' function is the process.
+This script uses `dplyr` package, so you have to install the package before running it.
 
-Not all feature is necessary. This script subset the data using R 'grep' function, which subset feature list
-only which has 'mean()' or 'std()' in it's name. 
+### Description of the logic
 
-Finary, calculate mean for each variable for each activity and each subject. R 'aggregate' function do that work.
+This script is composed of these parts:
 
-## Code Book
+* Download and unzip the data
+* read activity labels and features
+* read train/test data 
+  ** using descriptive activity names (TD-3)
+* merge train and test data (TD-1)
+* Labels the data set (TD-4)
+* Extracts mean and standard deviation for each measurement  (TD-2)
+* Creates a tidy data set (TD-5)
+* Write the tidy data set to "tidy_data.txt"
 
-* subject  : The number of each subject. Unit: none.
-* activity : Performed activities. (WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
+### Download and unzip the data 
 
-Measurement is identical original feature. Quotes from feature_info.txt:
+If there is not exist *UCI HAR Dataset* directory, then download and unzip it.
 
-> The features selected for this database come from the accelerometer and gyroscope 3-axial raw signals tAcc-XYZ and tGyro-XYZ. These time domain signals (prefix 't' to denote time) were captured at a constant rate of 50 Hz. Then they were filtered using a median filter and a 3rd order low pass Butterworth filter with a corner frequency of 20 Hz to remove noise. Similarly, the acceleration signal was then separated into body and gravity acceleration signals (tBodyAcc-XYZ and tGravityAcc-XYZ) using another low pass Butterworth filter with a corner frequency of 0.3 Hz. 
-> 
-> Subsequently, the body linear acceleration and angular velocity were derived in time to obtain Jerk signals (tBodyAccJerk-XYZ and tBodyGyroJerk-XYZ). Also the magnitude of these three-dimensional signals were calculated using the Euclidean norm (tBodyAccMag, tGravityAccMag, tBodyAccJerkMag, tBodyGyroMag, tBodyGyroJerkMag). 
-> 
-> Finally a Fast Fourier Transform (FFT) was applied to some of these signals producing fBodyAcc-XYZ, fBodyAccJerk-XYZ, fBodyGyro-XYZ, fBodyAccJerkMag, fBodyGyroMag, fBodyGyroJerkMag. (Note the 'f' to indicate frequency domain signals). 
-> 
-> These signals were used to estimate variables of the feature vector for each pattern:  
-> '-XYZ' is used to denote 3-axial signals in the X, Y and Z directions.
-> 
-> tBodyAcc-XYZ
-> tGravityAcc-XYZ
-> tBodyAccJerk-XYZ
-> tBodyGyro-XYZ
-> tBodyGyroJerk-XYZ
-> tBodyAccMag
-> tGravityAccMag
-> tBodyAccJerkMag
-> tBodyGyroMag
-> tBodyGyroJerkMag
-> fBodyAcc-XYZ
-> fBodyAccJerk-XYZ
-> fBodyGyro-XYZ
-> fBodyAccMag
-> fBodyAccJerkMag
-> fBodyGyroMag
-> fBodyGyroJerkMag
-> 
-> The set of variables that were estimated from these signals are: 
-> 
-> mean(): Mean value
-> std(): Standard deviation
-> 
+### Read activity labels and features
 
-Each value is grouped and averaged for activity and subject. It's unit is gravity(g). 
+From the top directory of UCI HAR Dataset, read features for column labels (TD-4), activity labels for activity names (TD-3).
+
+### Read train/test data
+
+There are 3 files in each directory:
+
+* subject_[train|test].txt : subject on each observation
+* data_[train|test].txt : data on each observation
+* activity_[train|test].txt : activity code on each observation
+
+Read each file then make data.frame using cbind. It also convert activity code to activity name merging with activity label, loaded at previous step.
+
+### Label the data set
+
+Label columns with feature label loaded at previous step.
+
+R column name may not accept some characters, like *-* or *(* or *)* which feature label includes. 
+To avoid errors, use `make.names` function. It substitute such character to "." , and also make them unique.
+
+### Extract mean and standard deviation
+
+Select columns based on it's name pattern. Description on the *features_info.txt*, each observation has `sum()` and `std()` respectively.
+At original *features.txt*, they are follows these conventions: `-sum()-[XYZ]`, `-std()-[XYZ]`, `-sum()`, `-std()`. 
+After `make.names` these conventions change to `.sum...[XYZ]`, `.std...[XYZ]`, `.sum..`, `.std..`. 
+
+Extraction was done by `select` and it's sub routine `match` dplyr function. 
+I choose "\\.sum\\.|\\.std\\." regex patterns for match parameter, which match the conventions noted above.
+
+### Create a tidy data set
+
+It's just map requirements to appropriate dplyr functions.
+
+1. The data set is grouped by activity and subject, using `group_by` function.
+2. Calculate average with `mean` function, repeating for each column with `summarise_each`  function.
+
+### Write tidy data set to the file
+
+Use `write.table` as noted on coursera page.
+
